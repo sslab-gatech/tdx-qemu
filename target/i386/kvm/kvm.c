@@ -1913,10 +1913,10 @@ int kvm_arch_init_vcpu(CPUState *cs)
             break;
         }
         case 0x1f:
-            if (env->nr_dies < 2) {
-                cpuid_i--;
-                break;
-            }
+            // if (env->nr_dies < 2) {
+            //     cpuid_i--;
+            //     break;
+            // }
             /* fallthrough */
         case 4:
         case 0xb:

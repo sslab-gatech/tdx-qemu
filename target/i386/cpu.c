@@ -6269,10 +6269,10 @@ void cpu_x86_cpuid(CPUX86State *env, uint32_t index, uint32_t count,
         break;
     case 0x1F:
         /* V2 Extended Topology Enumeration Leaf */
-        if (env->nr_dies < 2) {
-            *eax = *ebx = *ecx = *edx = 0;
-            break;
-        }
+        // if (env->nr_dies < 2) {
+        //     *eax = *ebx = *ecx = *edx = 0;
+        //     break;
+        // }
 
         *ecx = count & 0xff;
         *edx = cpu->apic_id;
