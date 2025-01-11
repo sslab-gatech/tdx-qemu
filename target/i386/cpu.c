@@ -1156,7 +1156,7 @@ FeatureWordInfo feature_word_info[FEATURE_WORDS] = {
             "taa-no", NULL, NULL, NULL,
             NULL, "sbdr-ssdp-no", "fbsdp-no", "psdp-no",
             NULL, "fb-clear", NULL, NULL,
-            NULL, NULL, NULL, NULL,
+            NULL, "xapic-disable", NULL, NULL,
             "pbrsb-no", NULL, "gds-no", NULL,
             NULL, NULL, NULL, NULL,
         },
