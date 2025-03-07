@@ -1925,6 +1925,13 @@ typedef struct CPUArchState {
 
     /* Number of dies within this CPU package. */
     unsigned nr_dies;
+
+#if defined(CONFIG_KVM)
+    /* ISA states for OpenTDX emulation */
+    struct kvm_seam_state *seam_state;
+    struct kvm_mktme_state *mktme_state;
+#endif
+
 } CPUX86State;
 
 struct kvm_msrs;

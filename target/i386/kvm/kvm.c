@@ -4611,6 +4611,75 @@ static int kvm_get_nested_state(X86CPU *cpu)
     return ret;
 }
 
+static int kvm_get_seam_state(X86CPU *cpu)
+{
+    CPUX86State *env = &cpu->env;
+
+    env->seam_state = malloc(sizeof(struct kvm_seam_state));
+
+    int ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_SEAM_STATE, env->seam_state);
+    if (ret < 0) {
+        return ret;
+    }
+
+    return ret;
+}
+
+static int kvm_get_mktme_state(X86CPU *cpu)
+{
+    CPUX86State *env = &cpu->env;
+
+    struct kvm_mktme_entries mktme_entries;
+    struct kvm_page_keyids page_keyids;
+
+    int ret;
+
+    env->mktme_state = malloc(sizeof(struct kvm_mktme_state));
+
+    ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_MKTME_STATE, env->mktme_state);
+    if (ret < 0) {
+        return ret;
+    }
+
+    env->mktme_state->mktme_entries = 
+        malloc(sizeof(struct kvm_mktme_entry) * env->mktme_state->num_mktme_keys);
+    mktme_entries.num_entries = env->mktme_state->num_mktme_keys;
+    mktme_entries.entries = env->mktme_state->mktme_entries;
+
+    ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_MKTME_ENTRIES, &mktme_entries);
+    if (ret < 0) {
+        goto err;
+    }
+
+    env->mktme_state->page_keyids =
+        malloc(sizeof(struct kvm_page_keyid) * env->mktme_state->num_page_keyids);
+    page_keyids.num_pages = env->mktme_state->num_page_keyids;
+    page_keyids.pages = env->mktme_state->page_keyids;
+
+    ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_PAGE_KEYIDS, &page_keyids);
+    if (ret < 0) {
+        goto err;
+    }
+
+    return 0;
+
+err:
+    if (mktme_entries.entries) {
+        free(mktme_entries.entries);
+        env->mktme_state->mktme_entries = NULL;
+    }
+
+    if (page_keyids.pages) {
+        free(page_keyids.pages);
+        env->mktme_state->page_keyids = NULL;
+    }
+
+    free(env->mktme_state);
+    free(env->seam_state);
+
+    return ret;
+}
+
 int kvm_arch_put_registers(CPUState *cpu, int level)
 {
     X86CPU *x86_cpu = X86_CPU(cpu);
@@ -4758,6 +4827,23 @@ int kvm_arch_get_registers(CPUState *cs)
         }
     }
 #endif
+
+    ret = 0;
+    goto out;
+
+    /* Retrieve OpenTDX related states */
+    if (runstate_check(RUN_STATE_QUICK_MIGRATE)) {
+        ret = kvm_get_seam_state(cpu);
+        if (ret < 0) {
+            goto out;
+        }
+
+        ret = kvm_get_mktme_state(cpu);
+        if (ret < 0) {
+            goto out;
+        }
+    }
+
     ret = 0;
  out:
     cpu_sync_bndcs_hflags(&cpu->env);
