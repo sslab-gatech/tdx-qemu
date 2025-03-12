@@ -3305,7 +3305,6 @@ static void *migration_thread(void *opaque)
     int64_t setup_start = qemu_clock_get_ms(QEMU_CLOCK_HOST);
     MigThrError thr_error;
     bool urgent = false;
-    RunState runstate;
 
     thread = migration_threads_add("live_migration", qemu_get_thread_id());
 
@@ -3316,13 +3315,6 @@ static void *migration_thread(void *opaque)
 
     qemu_mutex_lock_iothread();
     qemu_savevm_state_header(s->to_dst_file);
-
-    runstate = runstate_get();
-    migration_stop_vm(RUN_STATE_PAUSED);
-    runstate_set(RUN_STATE_QUICK_MIGRATE);
-    cpu_synchronize_all_states();
-    runstate_set(runstate);
-
     qemu_mutex_unlock_iothread();
 
     /*

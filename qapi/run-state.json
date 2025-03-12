@@ -57,7 +57,7 @@
   'data': [ 'debug', 'inmigrate', 'internal-error', 'io-error', 'paused',
             'postmigrate', 'prelaunch', 'finish-migrate', 'restore-vm',
             'running', 'save-vm', 'shutdown', 'suspended', 'watchdog',
-            'guest-panicked', 'colo', 'quick-migrate' ] }
+            'guest-panicked', 'colo' ] }
 
 ##
 # @ShutdownCause:

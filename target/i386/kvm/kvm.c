@@ -4782,6 +4782,7 @@ int kvm_arch_put_registers(CPUState *cpu, int level)
     if (ret < 0) {
         return ret;
     }
+
     return 0;
 }
 
@@ -4846,16 +4847,14 @@ int kvm_arch_get_registers(CPUState *cs)
 #endif
 
     /* Retrieve OpenTDX related states */
-    if (runstate_check(RUN_STATE_QUICK_MIGRATE)) {
-        ret = kvm_get_seam_state(cpu);
-        if (ret < 0) {
-            goto out;
-        }
+    ret = kvm_get_seam_state(cpu);
+    if (ret < 0) {
+        goto out;
+    }
 
-        ret = kvm_get_mktme_state(cpu);
-        if (ret < 0) {
-            goto out;
-        }
+    ret = kvm_get_mktme_state(cpu);
+    if (ret < 0) {
+        goto out;
     }
 
     ret = 0;
