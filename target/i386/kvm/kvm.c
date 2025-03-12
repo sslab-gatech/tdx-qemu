@@ -2212,6 +2212,12 @@ int kvm_arch_init_vcpu(CPUState *cs)
         }
     }
 
+    env->seam_state = g_malloc0(sizeof(struct kvm_seam_state));
+    env->mktme_state = g_malloc0(sizeof(struct kvm_mktme_state));
+
+    memset(env->seam_state, 0, sizeof(struct kvm_seam_state));
+    memset(env->mktme_state, 0, sizeof(struct kvm_mktme_state));
+
     cpu->kvm_msr_buf = g_malloc0(MSR_BUF_SIZE);
 
     if (!(env->features[FEAT_8000_0001_EDX] & CPUID_EXT2_RDTSCP)) {
@@ -2240,6 +2246,18 @@ int kvm_arch_destroy_vcpu(CPUState *cs)
 
     g_free(env->nested_state);
     env->nested_state = NULL;
+
+    g_free(env->seam_state);
+    env->seam_state = NULL;
+
+    if (env->mktme_state->mktme_entries)
+        g_free(env->mktme_state->mktme_entries);
+
+    if (env->mktme_state->page_keyids)
+        g_free(env->mktme_state->page_keyids);
+
+    g_free(env->mktme_state);
+    env->mktme_state = NULL;
 
     qemu_del_vm_change_state_handler(cpu->vmsentry);
 
@@ -4615,8 +4633,6 @@ static int kvm_get_seam_state(X86CPU *cpu)
 {
     CPUX86State *env = &cpu->env;
 
-    env->seam_state = malloc(sizeof(struct kvm_seam_state));
-
     int ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_SEAM_STATE, env->seam_state);
     if (ret < 0) {
         return ret;
@@ -4634,15 +4650,16 @@ static int kvm_get_mktme_state(X86CPU *cpu)
 
     int ret;
 
-    env->mktme_state = malloc(sizeof(struct kvm_mktme_state));
-
     ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_MKTME_STATE, env->mktme_state);
     if (ret < 0) {
         return ret;
     }
 
+    if (env->mktme_state->mktme_entries)
+        g_free(env->mktme_state->mktme_entries);
     env->mktme_state->mktme_entries = 
-        malloc(sizeof(struct kvm_mktme_entry) * env->mktme_state->num_mktme_keys);
+        g_malloc0(sizeof(struct kvm_mktme_entry) * env->mktme_state->num_mktme_keys);
+
     mktme_entries.num_entries = env->mktme_state->num_mktme_keys;
     mktme_entries.entries = env->mktme_state->mktme_entries;
 
@@ -4651,8 +4668,11 @@ static int kvm_get_mktme_state(X86CPU *cpu)
         goto err;
     }
 
+    if (env->mktme_state->page_keyids)
+        g_free(env->mktme_state->page_keyids);
     env->mktme_state->page_keyids =
-        malloc(sizeof(struct kvm_page_keyid) * env->mktme_state->num_page_keyids);
+        g_malloc0(sizeof(struct kvm_page_keyid) * env->mktme_state->num_page_keyids);
+
     page_keyids.num_pages = env->mktme_state->num_page_keyids;
     page_keyids.pages = env->mktme_state->page_keyids;
 
@@ -4665,17 +4685,14 @@ static int kvm_get_mktme_state(X86CPU *cpu)
 
 err:
     if (mktme_entries.entries) {
-        free(mktme_entries.entries);
+        g_free(mktme_entries.entries);
         env->mktme_state->mktme_entries = NULL;
     }
 
     if (page_keyids.pages) {
-        free(page_keyids.pages);
+        g_free(page_keyids.pages);
         env->mktme_state->page_keyids = NULL;
     }
-
-    free(env->mktme_state);
-    free(env->seam_state);
 
     return ret;
 }

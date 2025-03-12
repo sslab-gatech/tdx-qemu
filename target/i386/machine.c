@@ -1302,6 +1302,16 @@ static const VMStateDescription vmstate_seam_state = {
     }
 };
 
+static int mktme_variables_preload(void *opaque)
+{
+    struct kvm_mktme_state *mktme_state = opaque;
+
+    mktme_state->mktme_entries = g_malloc0(sizeof(struct kvm_mktme_entry) * mktme_state->num_mktme_keys);
+    mktme_state->page_keyids = g_malloc0(sizeof(struct kvm_page_keyid) * mktme_state -> num_page_keyids);
+
+    return 0;
+}
+
 static const VMStateDescription vmstate_kvm_mktme_entry = {
     .name = "cpu/kvm_mktme_entry",
     .version_id = 1,
@@ -1325,6 +1335,18 @@ static const VMStateDescription vmstate_kvm_page_keyid = {
     }
 };
 
+static const VMStateDescription vmstate_kvm_mktme_variables = {
+    .name = "cpu/kvm_mktme_variables",
+    .version_id = 1,
+    .minimum_version_id = 1,
+    .pre_load = mktme_variables_preload,
+    .fields = (VMStateField[]) {
+        VMSTATE_STRUCT_VARRAY_POINTER_UINT32(mktme_entries, struct kvm_mktme_state, num_mktme_keys, vmstate_kvm_mktme_entry, struct kvm_mktme_entry),
+        VMSTATE_STRUCT_VARRAY_POINTER_UINT32(page_keyids, struct kvm_mktme_state, num_page_keyids, vmstate_kvm_page_keyid, struct kvm_page_keyid),
+        VMSTATE_END_OF_LIST()
+    }
+};
+
 static const VMStateDescription vmstate_kvm_mktme_state = {
     .name = "cpu/kvm_mktme_state",
     .version_id = 1,
@@ -1333,9 +1355,7 @@ static const VMStateDescription vmstate_kvm_mktme_state = {
         VMSTATE_U64(msr_ia32_tme_capability, struct kvm_mktme_state),
         VMSTATE_U64(msr_ia32_tme_activate, struct kvm_mktme_state),
         VMSTATE_U32(num_mktme_keys, struct kvm_mktme_state),
-        VMSTATE_STRUCT_VARRAY_POINTER_UINT32(mktme_entries, struct kvm_mktme_state, num_mktme_keys, vmstate_kvm_mktme_entry, struct kvm_mktme_entry),
         VMSTATE_U32(num_page_keyids, struct kvm_mktme_state),
-        VMSTATE_STRUCT_VARRAY_POINTER_UINT32(page_keyids, struct kvm_mktme_state, num_page_keyids, vmstate_kvm_page_keyid, struct kvm_page_keyid),
         VMSTATE_END_OF_LIST()
     }
 };
@@ -1345,11 +1365,12 @@ static const VMStateDescription vmstate_mktme_state = {
     .name = "cpu/mktme_state",
     .version_id = 1,
     .minimum_version_id = 1,
-    .needed = NULL,
-    .post_load = NULL,
     .fields = (VMStateField[]) {
         VMSTATE_STRUCT_POINTER(env.mktme_state, X86CPU, 
             vmstate_kvm_mktme_state,
+            struct kvm_mktme_state),
+        VMSTATE_STRUCT_POINTER(env.mktme_state, X86CPU,
+            vmstate_kvm_mktme_variables,
             struct kvm_mktme_state),
         VMSTATE_END_OF_LIST()
     }
