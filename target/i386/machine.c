@@ -1352,7 +1352,6 @@ static const VMStateDescription vmstate_kvm_mktme_state = {
     .version_id = 1,
     .minimum_version_id = 1,
     .fields = (VMStateField[]) {
-        VMSTATE_U64(msr_ia32_tme_capability, struct kvm_mktme_state),
         VMSTATE_U64(msr_ia32_tme_activate, struct kvm_mktme_state),
         VMSTATE_U32(num_mktme_keys, struct kvm_mktme_state),
         VMSTATE_U32(num_page_keyids, struct kvm_mktme_state),

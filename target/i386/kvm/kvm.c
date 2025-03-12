@@ -2218,6 +2218,10 @@ int kvm_arch_init_vcpu(CPUState *cs)
     memset(env->seam_state, 0, sizeof(struct kvm_seam_state));
     memset(env->mktme_state, 0, sizeof(struct kvm_mktme_state));
 
+    env->seam_state->seamrr.enabled = 1;
+    env->seam_state->seam_extend.valid = 1;
+    env->seam_state->msr_ia32_bios_done = 1;
+
     cpu->kvm_msr_buf = g_malloc0(MSR_BUF_SIZE);
 
     if (!(env->features[FEAT_8000_0001_EDX] & CPUID_EXT2_RDTSCP)) {
@@ -4629,16 +4633,25 @@ static int kvm_get_nested_state(X86CPU *cpu)
     return ret;
 }
 
+static int kvm_put_seam_state(X86CPU *cpu)
+{
+    CPUX86State *env = &cpu->env;
+
+    return kvm_vcpu_ioctl(CPU(cpu), KVM_SET_SEAM_STATE, env->seam_state);
+}
+
 static int kvm_get_seam_state(X86CPU *cpu)
 {
     CPUX86State *env = &cpu->env;
 
-    int ret = kvm_vcpu_ioctl(CPU(cpu), KVM_GET_SEAM_STATE, env->seam_state);
-    if (ret < 0) {
-        return ret;
-    }
+    return kvm_vcpu_ioctl(CPU(cpu), KVM_GET_SEAM_STATE, env->seam_state);
+}
 
-    return ret;
+static int kvm_put_mktme_state(X86CPU *cpu)
+{
+    CPUX86State *env = &cpu->env;
+
+    return kvm_vcpu_ioctl(CPU(cpu), KVM_SET_MKTME_STATE, env->mktme_state);
 }
 
 static int kvm_get_mktme_state(X86CPU *cpu)
@@ -4783,6 +4796,19 @@ int kvm_arch_put_registers(CPUState *cpu, int level)
         return ret;
     }
 
+    /* Synchronize OpenTDX related states */
+    ret = kvm_put_seam_state(x86_cpu);
+    if (ret < 0) {
+        return ret;
+    }
+
+    if (x86_cpu->apic_id == 0) {
+        ret = kvm_put_mktme_state(x86_cpu);
+        if (ret < 0) {
+            return ret;
+        }
+    }
+
     return 0;
 }
 
@@ -4852,9 +4878,11 @@ int kvm_arch_get_registers(CPUState *cs)
         goto out;
     }
 
-    ret = kvm_get_mktme_state(cpu);
-    if (ret < 0) {
-        goto out;
+    if (cpu->apic_id == 0) {
+        ret = kvm_get_mktme_state(cpu);
+        if (ret < 0) {
+            goto out;
+        }
     }
 
     ret = 0;
