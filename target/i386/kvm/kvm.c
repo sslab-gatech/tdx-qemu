@@ -4828,9 +4828,6 @@ int kvm_arch_get_registers(CPUState *cs)
     }
 #endif
 
-    ret = 0;
-    goto out;
-
     /* Retrieve OpenTDX related states */
     if (runstate_check(RUN_STATE_QUICK_MIGRATE)) {
         ret = kvm_get_seam_state(cpu);

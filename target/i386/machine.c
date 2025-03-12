@@ -1259,6 +1259,102 @@ static const VMStateDescription vmstate_nested_state = {
     }
 };
 
+static const VMStateDescription vmstate_kvm_seam_state = {
+    .name = "cpu/kvm_seam_state",
+    .version_id = 1,
+    .minimum_version_id = 1,
+    .fields = (VMStateField[]) {
+        VMSTATE_U8(seamrr.configured, struct kvm_seam_state),
+        VMSTATE_U8(seamrr.locked, struct kvm_seam_state),
+        VMSTATE_U8(seamrr.enabled, struct kvm_seam_state),
+        VMSTATE_U64(seamrr.base, struct kvm_seam_state),
+        VMSTATE_U64(seamrr.size, struct kvm_seam_state),
+        VMSTATE_U64(seam_extend.valid, struct kvm_seam_state),
+        VMSTATE_UINT8_ARRAY(seam_extend.tee_tcb_svn, struct kvm_seam_state, 16),
+        VMSTATE_UINT8_ARRAY(seam_extend.mr_seam, struct kvm_seam_state, 48),
+        VMSTATE_UINT8_ARRAY(seam_extend.mr_signer, struct kvm_seam_state, 48),
+        VMSTATE_U64(seam_extend.attributes, struct kvm_seam_state),
+        VMSTATE_U8(seam_extend.seam_ready, struct kvm_seam_state),
+        VMSTATE_U8(seam_extend.seam_under_debug, struct kvm_seam_state),
+        VMSTATE_U8(seam_extend.p_seamldr_ready, struct kvm_seam_state),
+        VMSTATE_U8(authenticated_code_execution_mode, struct kvm_seam_state),
+        VMSTATE_U8(seam_mode, struct kvm_seam_state),
+        VMSTATE_U64(seam_vmptr, struct kvm_seam_state),
+        VMSTATE_U8(in_pseamldr, struct kvm_seam_state),
+        VMSTATE_U64(msr_ia32_bios_se_svn, struct kvm_seam_state),
+        VMSTATE_U64(msr_ia32_bios_done, struct kvm_seam_state),
+        VMSTATE_U64(xapic_disable, struct kvm_seam_state),
+        VMSTATE_END_OF_LIST(),
+    }
+};
+
+static const VMStateDescription vmstate_seam_state = {
+    .name = "cpu/seam_state",
+    .version_id = 1,
+    .minimum_version_id = 1,
+    .needed = NULL,
+    .post_load = NULL,
+    .fields = (VMStateField[]) {
+        VMSTATE_STRUCT_POINTER(env.seam_state, X86CPU, 
+            vmstate_kvm_seam_state,
+            struct kvm_seam_state),
+        VMSTATE_END_OF_LIST()
+    }
+};
+
+static const VMStateDescription vmstate_kvm_mktme_entry = {
+    .name = "cpu/kvm_mktme_entry",
+    .version_id = 1,
+    .minimum_version_id = 1,
+    .fields = (VMStateField[]) {
+        VMSTATE_U16(key_id, struct kvm_mktme_entry),
+        VMSTATE_UINT8_ARRAY(key, struct kvm_mktme_entry, 32),
+        VMSTATE_U8(enc_mode, struct kvm_mktme_entry),
+        VMSTATE_END_OF_LIST()
+    }
+};
+
+static const VMStateDescription vmstate_kvm_page_keyid = {
+    .name = "cpu/kvm_page_keyid",
+    .version_id = 1,
+    .minimum_version_id = 1,
+    .fields = (VMStateField[]) {
+        VMSTATE_U64(gfn, struct kvm_page_keyid),
+        VMSTATE_U16(key_id, struct kvm_page_keyid),
+        VMSTATE_END_OF_LIST()
+    }
+};
+
+static const VMStateDescription vmstate_kvm_mktme_state = {
+    .name = "cpu/kvm_mktme_state",
+    .version_id = 1,
+    .minimum_version_id = 1,
+    .fields = (VMStateField[]) {
+        VMSTATE_U64(msr_ia32_tme_capability, struct kvm_mktme_state),
+        VMSTATE_U64(msr_ia32_tme_activate, struct kvm_mktme_state),
+        VMSTATE_U32(num_mktme_keys, struct kvm_mktme_state),
+        VMSTATE_STRUCT_VARRAY_POINTER_UINT32(mktme_entries, struct kvm_mktme_state, num_mktme_keys, vmstate_kvm_mktme_entry, struct kvm_mktme_entry),
+        VMSTATE_U32(num_page_keyids, struct kvm_mktme_state),
+        VMSTATE_STRUCT_VARRAY_POINTER_UINT32(page_keyids, struct kvm_mktme_state, num_page_keyids, vmstate_kvm_page_keyid, struct kvm_page_keyid),
+        VMSTATE_END_OF_LIST()
+    }
+};
+
+
+static const VMStateDescription vmstate_mktme_state = {
+    .name = "cpu/mktme_state",
+    .version_id = 1,
+    .minimum_version_id = 1,
+    .needed = NULL,
+    .post_load = NULL,
+    .fields = (VMStateField[]) {
+        VMSTATE_STRUCT_POINTER(env.mktme_state, X86CPU, 
+            vmstate_kvm_mktme_state,
+            struct kvm_mktme_state),
+        VMSTATE_END_OF_LIST()
+    }
+};
+
 static bool xen_vcpu_needed(void *opaque)
 {
     return (xen_mode == XEN_EMULATE);
@@ -1779,6 +1875,10 @@ const VMStateDescription vmstate_x86_cpu = {
 #endif
         &vmstate_arch_lbr,
         &vmstate_triple_fault,
+#ifdef CONFIG_KVM
+        &vmstate_seam_state,
+        &vmstate_mktme_state,
+#endif
         NULL
     }
 };
