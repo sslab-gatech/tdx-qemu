@@ -4668,8 +4668,6 @@ static int kvm_get_mktme_state(X86CPU *cpu)
         return ret;
     }
 
-    if (env->mktme_state->mktme_entries)
-        g_free(env->mktme_state->mktme_entries);
     env->mktme_state->mktme_entries = 
         g_malloc0(sizeof(struct kvm_mktme_entry) * env->mktme_state->num_mktme_keys);
 
@@ -4681,8 +4679,6 @@ static int kvm_get_mktme_state(X86CPU *cpu)
         goto err;
     }
 
-    if (env->mktme_state->page_keyids)
-        g_free(env->mktme_state->page_keyids);
     env->mktme_state->page_keyids =
         g_malloc0(sizeof(struct kvm_page_keyid) * env->mktme_state->num_page_keyids);
 
@@ -4697,16 +4693,6 @@ static int kvm_get_mktme_state(X86CPU *cpu)
     return 0;
 
 err:
-    if (mktme_entries.entries) {
-        g_free(mktme_entries.entries);
-        env->mktme_state->mktme_entries = NULL;
-    }
-
-    if (page_keyids.pages) {
-        g_free(page_keyids.pages);
-        env->mktme_state->page_keyids = NULL;
-    }
-
     return ret;
 }
 
