@@ -1881,7 +1881,7 @@ static void ram_block_add(RAMBlock *new_block, Error **errp)
         }
 
         new_block->guest_memfd = kvm_create_guest_memfd(new_block->max_length,
-                                                        0, errp);
+                                                        KVM_GUEST_MEMFD_ALLOW_HUGEPAGE, errp);
         if (new_block->guest_memfd < 0) {
             qemu_mutex_unlock_ramlist();
             goto out_free;
