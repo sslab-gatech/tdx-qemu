@@ -349,7 +349,6 @@ igb_init_net_peer(IGBState *s, PCIDevice *pci_dev, uint8_t *macaddr)
     for (i = 0; i < s->conf.peers.queues; i++) {
         nc = qemu_get_subqueue(s->nic, i);
         qemu_set_vnet_hdr_len(nc->peer, sizeof(struct virtio_net_hdr));
-        qemu_using_vnet_hdr(nc->peer, true);
     }
 }
 
@@ -486,14 +485,12 @@ static void igb_pci_uninit(PCIDevice *pci_dev)
     msi_uninit(pci_dev);
 }
 
-static void igb_qdev_reset_hold(Object *obj)
+static void igb_qdev_reset_hold(Object *obj, ResetType type)
 {
-    PCIDevice *d = PCI_DEVICE(obj);
     IGBState *s = IGB(obj);
 
     trace_e1000e_cb_qdev_reset_hold();
 
-    pcie_sriov_pf_disable_vfs(d);
     igb_core_reset(&s->core);
 }
 
@@ -520,7 +517,7 @@ static const VMStateDescription igb_vmstate_tx_ctx = {
     .name = "igb-tx-ctx",
     .version_id = 1,
     .minimum_version_id = 1,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32(vlan_macip_lens, struct e1000_adv_tx_context_desc),
         VMSTATE_UINT32(seqnum_seed, struct e1000_adv_tx_context_desc),
         VMSTATE_UINT32(type_tucmd_mlhl, struct e1000_adv_tx_context_desc),
@@ -533,7 +530,7 @@ static const VMStateDescription igb_vmstate_tx = {
     .name = "igb-tx",
     .version_id = 2,
     .minimum_version_id = 2,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_STRUCT_ARRAY(ctx, struct igb_tx, 2, 0, igb_vmstate_tx_ctx,
                              struct e1000_adv_tx_context_desc),
         VMSTATE_UINT32(first_cmd_type_len, struct igb_tx),
@@ -548,7 +545,7 @@ static const VMStateDescription igb_vmstate_intr_timer = {
     .name = "igb-intr-timer",
     .version_id = 1,
     .minimum_version_id = 1,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_TIMER_PTR(timer, IGBIntrDelayTimer),
         VMSTATE_BOOL(running, IGBIntrDelayTimer),
         VMSTATE_END_OF_LIST()
@@ -569,7 +566,7 @@ static const VMStateDescription igb_vmstate = {
     .minimum_version_id = 1,
     .pre_save = igb_pre_save,
     .post_load = igb_post_load,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_PCI_DEVICE(parent_obj, IGBState),
         VMSTATE_MSIX(parent_obj, IGBState),
 

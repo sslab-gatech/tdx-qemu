@@ -20,7 +20,6 @@
 
 #include "qemu/osdep.h"
 #include "cpu.h"
-#include "disas/disas.h"
 #include "exec/exec-all.h"
 #include "tcg/tcg-op.h"
 #include "exec/cpu_ldst.h"
@@ -95,8 +94,7 @@ enum {
 
 void tricore_cpu_dump_state(CPUState *cs, FILE *f, int flags)
 {
-    TriCoreCPU *cpu = TRICORE_CPU(cs);
-    CPUTriCoreState *env = &cpu->env;
+    CPUTriCoreState *env = cpu_env(cs);
     uint32_t psw;
     int i;
 
@@ -2734,8 +2732,7 @@ static inline void gen_insert(TCGv ret, TCGv r1, TCGv r2, TCGv width, TCGv pos)
     TCGv temp = tcg_temp_new();
     TCGv temp2 = tcg_temp_new();
 
-    tcg_gen_movi_tl(mask, 1);
-    tcg_gen_shl_tl(mask, mask, width);
+    tcg_gen_shl_tl(mask, tcg_constant_tl(1), width);
     tcg_gen_subi_tl(mask, mask, 1);
     tcg_gen_shl_tl(mask, mask, pos);
 
@@ -8355,7 +8352,7 @@ static void tricore_tr_init_disas_context(DisasContextBase *dcbase,
 {
     DisasContext *ctx = container_of(dcbase, DisasContext, base);
     CPUTriCoreState *env = cpu_env(cs);
-    ctx->mem_idx = cpu_mmu_index(env, false);
+    ctx->mem_idx = cpu_mmu_index(cs, false);
 
     uint32_t tb_flags = (uint32_t)ctx->base.tb->flags;
     ctx->priv = FIELD_EX32(tb_flags, TB_FLAGS, PRIV);
@@ -8454,25 +8451,17 @@ static void tricore_tr_tb_stop(DisasContextBase *dcbase, CPUState *cpu)
     }
 }
 
-static void tricore_tr_disas_log(const DisasContextBase *dcbase,
-                                 CPUState *cpu, FILE *logfile)
-{
-    fprintf(logfile, "IN: %s\n", lookup_symbol(dcbase->pc_first));
-    target_disas(logfile, cpu, dcbase->pc_first, dcbase->tb->size);
-}
-
 static const TranslatorOps tricore_tr_ops = {
     .init_disas_context = tricore_tr_init_disas_context,
     .tb_start           = tricore_tr_tb_start,
     .insn_start         = tricore_tr_insn_start,
     .translate_insn     = tricore_tr_translate_insn,
     .tb_stop            = tricore_tr_tb_stop,
-    .disas_log          = tricore_tr_disas_log,
 };
 
 
 void gen_intermediate_code(CPUState *cs, TranslationBlock *tb, int *max_insns,
-                           target_ulong pc, void *host_pc)
+                           vaddr pc, void *host_pc)
 {
     DisasContext ctx;
     translator_loop(cs, tb, max_insns, pc, host_pc,

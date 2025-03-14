@@ -177,7 +177,7 @@ static void aspeed_sdhci_reset(DeviceState *dev)
 static const VMStateDescription vmstate_aspeed_sdhci = {
     .name = TYPE_ASPEED_SDHCI,
     .version_id = 1,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32_ARRAY(regs, AspeedSDHCIState, ASPEED_SDHCI_NUM_REGS),
         VMSTATE_END_OF_LIST(),
     },
@@ -193,7 +193,7 @@ static void aspeed_sdhci_class_init(ObjectClass *classp, void *data)
     DeviceClass *dc = DEVICE_CLASS(classp);
 
     dc->realize = aspeed_sdhci_realize;
-    dc->reset = aspeed_sdhci_reset;
+    device_class_set_legacy_reset(dc, aspeed_sdhci_reset);
     dc->vmsd = &vmstate_aspeed_sdhci;
     device_class_set_props(dc, aspeed_sdhci_properties);
 }

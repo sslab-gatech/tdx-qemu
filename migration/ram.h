@@ -44,6 +44,7 @@ extern XBZRLECacheStats xbzrle_counters;
     INTERNAL_RAMBLOCK_FOREACH(block)                   \
         if (!qemu_ram_is_migratable(block)) {} else
 
+void ram_mig_init(void);
 int xbzrle_cache_resize(uint64_t new_size, Error **errp);
 uint64_t ram_bytes_remaining(void);
 uint64_t ram_bytes_total(void);
@@ -69,12 +70,15 @@ int ramblock_recv_bitmap_test(RAMBlock *rb, void *host_addr);
 bool ramblock_recv_bitmap_test_byte_offset(RAMBlock *rb, uint64_t byte_offset);
 void ramblock_recv_bitmap_set(RAMBlock *rb, void *host_addr);
 void ramblock_recv_bitmap_set_range(RAMBlock *rb, void *host_addr, size_t nr);
+void ramblock_recv_bitmap_set_offset(RAMBlock *rb, uint64_t byte_offset);
 int64_t ramblock_recv_bitmap_send(QEMUFile *file,
                                   const char *block_name);
 bool ram_dirty_bitmap_reload(MigrationState *s, RAMBlock *rb, Error **errp);
 bool ramblock_page_is_discarded(RAMBlock *rb, ram_addr_t start);
 void postcopy_preempt_shutdown_file(MigrationState *s);
 void *postcopy_preempt_thread(void *opaque);
+void ramblock_set_file_bmap_atomic(RAMBlock *block, ram_addr_t offset,
+                                   bool set);
 
 /* ram cache */
 int colo_init_ram_cache(void);

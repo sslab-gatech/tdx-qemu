@@ -89,6 +89,9 @@ static int blkio_resize_bounce_pool(BDRVBlkioState *s, int64_t bytes)
     /* Pad size to reduce frequency of resize calls */
     bytes += 128 * 1024;
 
+    /* Align the pool size to avoid blkio_alloc_mem_region() failure */
+    bytes = QEMU_ALIGN_UP(bytes, s->mem_region_alignment);
+
     WITH_QEMU_LOCK_GUARD(&s->blkio_lock) {
         int ret;
 
@@ -710,7 +713,7 @@ static int blkio_virtio_blk_connect(BlockDriverState *bs, QDict *options,
          * for example will fail.
          *
          * In order to open the device read-only, we are using the `read-only`
-         * property of the libblkio driver in blkio_file_open().
+         * property of the libblkio driver in blkio_open().
          */
         fd = qemu_open(path, O_RDWR, NULL);
         if (fd < 0) {
@@ -788,8 +791,8 @@ static int blkio_virtio_blk_connect(BlockDriverState *bs, QDict *options,
     return 0;
 }
 
-static int blkio_file_open(BlockDriverState *bs, QDict *options, int flags,
-                           Error **errp)
+static int blkio_open(BlockDriverState *bs, QDict *options, int flags,
+                      Error **errp)
 {
     const char *blkio_driver = bs->drv->protocol_name;
     BDRVBlkioState *s = bs->opaque;
@@ -896,8 +899,10 @@ static int blkio_file_open(BlockDriverState *bs, QDict *options, int flags,
     }
 
     bs->supported_write_flags = BDRV_REQ_FUA | BDRV_REQ_REGISTERED_BUF;
-    bs->supported_zero_flags = BDRV_REQ_FUA | BDRV_REQ_MAY_UNMAP |
-                               BDRV_REQ_NO_FALLBACK;
+    bs->supported_zero_flags = BDRV_REQ_MAY_UNMAP | BDRV_REQ_NO_FALLBACK;
+#ifdef CONFIG_BLKIO_WRITE_ZEROS_FUA
+    bs->supported_zero_flags |= BDRV_REQ_FUA;
+#endif
 
     qemu_mutex_init(&s->blkio_lock);
     qemu_co_mutex_init(&s->bounce_lock);
@@ -1085,7 +1090,7 @@ static void blkio_refresh_limits(BlockDriverState *bs, Error **errp)
  */
 #define BLKIO_DRIVER_COMMON \
     .instance_size           = sizeof(BDRVBlkioState), \
-    .bdrv_file_open          = blkio_file_open, \
+    .bdrv_open               = blkio_open, \
     .bdrv_close              = blkio_close, \
     .bdrv_co_getlength       = blkio_co_getlength, \
     .bdrv_co_truncate        = blkio_truncate, \

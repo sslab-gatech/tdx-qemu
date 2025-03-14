@@ -41,7 +41,7 @@ Those hosts are officially supported, with various accelerators:
      - Accelerators
    * - Arm
      - kvm (64 bit only), tcg, xen
-   * - MIPS (little endian only)
+   * - MIPS (64 bit little endian only)
      - kvm, tcg
    * - PPC
      - kvm, tcg
@@ -138,6 +138,8 @@ build process to successfully complete. On newer versions of Windows 10,
 unprivileged accounts can create symlinks if Developer Mode is enabled.
 When Developer Mode is not available/enabled, the SeCreateSymbolicLinkPrivilege
 privilege is required, or the process must be run as an administrator.
+
+Only 64-bit Windows is supported.
 
 .. _Homebrew: https://brew.sh/
 .. _MacPorts: https://www.macports.org/

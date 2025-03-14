@@ -33,6 +33,7 @@
 #include "exec/helper-proto.h"
 #include "qemu/host-utils.h"
 #include "exec/exec-all.h"
+#include "exec/page-protection.h"
 
 #define XTENSA_MPU_SEGMENT_MASK 0x0000001f
 #define XTENSA_MPU_ACC_RIGHTS_MASK 0x00000f00
@@ -66,7 +67,7 @@ void HELPER(itlb_hit_test)(CPUXtensaState *env, uint32_t vaddr)
      * only the side-effects (ie any MMU or other exception)
      */
     probe_access(env, vaddr, 1, MMU_INST_FETCH,
-                 cpu_mmu_index(env, true), GETPC());
+                 cpu_mmu_index(env_cpu(env), true), GETPC());
 }
 
 void HELPER(wsr_rasid)(CPUXtensaState *env, uint32_t v)
@@ -990,7 +991,7 @@ uint32_t HELPER(rptlb1)(CPUXtensaState *env, uint32_t s)
 uint32_t HELPER(pptlb)(CPUXtensaState *env, uint32_t v)
 {
     unsigned nhits;
-    unsigned segment = XTENSA_MPU_PROBE_B;
+    unsigned segment;
     unsigned bg_segment;
 
     nhits = xtensa_mpu_lookup(env->mpu_fg, env->config->n_mpu_fg_segments,
@@ -1004,7 +1005,7 @@ uint32_t HELPER(pptlb)(CPUXtensaState *env, uint32_t v)
         xtensa_mpu_lookup(env->config->mpu_bg,
                           env->config->n_mpu_bg_segments,
                           v, &bg_segment);
-        return env->config->mpu_bg[bg_segment].attr | segment;
+        return env->config->mpu_bg[bg_segment].attr | XTENSA_MPU_PROBE_B;
     }
 }
 

@@ -364,7 +364,7 @@ static const VMStateDescription vmstate_esp_pci_scsi = {
     .version_id = 2,
     .minimum_version_id = 1,
     .pre_save = esp_pre_save,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_PCI_DEVICE(parent_obj, PCIESPState),
         VMSTATE_BUFFER_UNSAFE(dma_regs, PCIESPState, 0, 8 * sizeof(uint32_t)),
         VMSTATE_UINT8_V(esp.mig_version_id, PCIESPState, 2),
@@ -440,7 +440,7 @@ static void esp_pci_class_init(ObjectClass *klass, void *data)
     k->class_id = PCI_CLASS_STORAGE_SCSI;
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
     dc->desc = "AMD Am53c974 PCscsi-PCI SCSI adapter";
-    dc->reset = esp_pci_hard_reset;
+    device_class_set_legacy_reset(dc, esp_pci_hard_reset);
     dc->vmsd = &vmstate_esp_pci_scsi;
 }
 

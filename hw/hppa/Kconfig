@@ -1,12 +1,15 @@
 config HPPA_B160L
     bool
+    default y
+    depends on HPPA
     imply PCI_DEVICES
     imply E1000_PCI
+    imply USB_OHCI_PCI
     imply VIRTIO_VGA
     select ASTRO
     select DINO
     select LASI
-    select SERIAL
+    select SERIAL_MM
     select SERIAL_PCI
     select ISA_BUS
     select I8259
@@ -17,4 +20,3 @@ config HPPA_B160L
     select LASIPS2
     select PARALLEL
     select ARTIST
-    select USB_OHCI_PCI

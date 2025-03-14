@@ -287,7 +287,7 @@ static const VMStateDescription vmstate_dino = {
     .name = "Dino",
     .version_id = 2,
     .minimum_version_id = 1,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32(iar0, DinoState),
         VMSTATE_UINT32(iar1, DinoState),
         VMSTATE_UINT32(imr, DinoState),
@@ -502,7 +502,7 @@ static void dino_pcihost_class_init(ObjectClass *klass, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
-    dc->reset = dino_pcihost_reset;
+    device_class_set_legacy_reset(dc, dino_pcihost_reset);
     dc->realize = dino_pcihost_realize;
     dc->unrealize = dino_pcihost_unrealize;
     device_class_set_props(dc, dino_pcihost_properties);

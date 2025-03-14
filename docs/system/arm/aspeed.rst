@@ -1,11 +1,12 @@
-Aspeed family boards (``*-bmc``, ``ast2500-evb``, ``ast2600-evb``)
-==================================================================
+Aspeed family boards (``ast2500-evb``, ``ast2600-evb``, ``ast2700-evb``, ``bletchley-bmc``, ``fuji-bmc``, ``fby35-bmc``, ``fp5280g2-bmc``, ``g220a-bmc``, ``palmetto-bmc``, ``qcom-dc-scm-v1-bmc``, ``qcom-firework-bmc``, ``quanta-q71l-bmc``, ``rainier-bmc``, ``romulus-bmc``, ``sonorapass-bmc``, ``supermicrox11-bmc``, ``tiogapass-bmc``, ``tacoma-bmc``, ``witherspoon-bmc``, ``yosemitev2-bmc``)
+========================================================================================================================================================================================================================================================================================================================================================================================================
 
 The QEMU Aspeed machines model BMCs of various OpenPOWER systems and
 Aspeed evaluation boards. They are based on different releases of the
 Aspeed SoC : the AST2400 integrating an ARM926EJ-S CPU (400MHz), the
-AST2500 with an ARM1176JZS CPU (800MHz) and more recently the AST2600
-with dual cores ARM Cortex-A7 CPUs (1.2GHz).
+AST2500 with an ARM1176JZS CPU (800MHz), the AST2600
+with dual cores ARM Cortex-A7 CPUs (1.2GHz) and more recently the AST2700
+with quad cores ARM Cortex-A35 64 bits CPUs (1.6GHz)
 
 The SoC comes with RAM, Gigabit ethernet, USB, SD/MMC, USB, SPI, I2C,
 etc.
@@ -38,6 +39,10 @@ AST2600 SoC based machines :
 - ``qcom-dc-scm-v1-bmc``   Qualcomm DC-SCM V1 BMC
 - ``qcom-firework-bmc``    Qualcomm Firework BMC
 
+AST2700 SoC based machines :
+
+- ``ast2700-evb``          Aspeed AST2700 Evaluation board (Cortex-A35)
+
 Supported devices
 -----------------
 
@@ -66,6 +71,7 @@ Supported devices
  * eMMC Boot Controller (dummy)
  * PECI Controller (minimal)
  * I3C Controller
+ * Internal Bridge Controller (SLI dummy)
 
 
 Missing devices
@@ -95,6 +101,10 @@ or directly from the OpenBMC GitHub release repository :
 
    https://github.com/openbmc/openbmc/releases
 
+or directly from the ASPEED Forked OpenBMC GitHub release repository :
+
+   https://github.com/AspeedTech-BMC/openbmc/releases
+
 To boot a kernel directly from a Linux build tree:
 
 .. code-block:: bash
@@ -112,6 +122,8 @@ To boot the machine from the flash image, use an MTD drive :
 	-drive file=obmc-phosphor-image-romulus.static.mtd,format=raw,if=mtd -nographic
 
 Options specific to Aspeed machines are :
+
+ * ``boot-emmc`` to set or unset boot from eMMC (AST2600).
 
  * ``execute-in-place`` which emulates the boot from the CE0 flash
    device by using the FMC controller to load the instructions, and
@@ -163,6 +175,27 @@ under Linux), use :
 .. code-block:: bash
 
   -M ast2500-evb,bmc-console=uart3
+
+
+Boot the AST2700 machine from the flash image, use an MTD drive :
+
+.. code-block:: bash
+
+  IMGDIR=ast2700-default
+  UBOOT_SIZE=$(stat --format=%s -L ${IMGDIR}/u-boot-nodtb.bin)
+
+  $ qemu-system-aarch64 -M ast2700-evb \
+       -device loader,force-raw=on,addr=0x400000000,file=${IMGDIR}/u-boot-nodtb.bin \
+       -device loader,force-raw=on,addr=$((0x400000000 + ${UBOOT_SIZE})),file=${IMGDIR}/u-boot.dtb \
+       -device loader,force-raw=on,addr=0x430000000,file=${IMGDIR}/bl31.bin \
+       -device loader,force-raw=on,addr=0x430080000,file=${IMGDIR}/optee/tee-raw.bin \
+       -device loader,cpu-num=0,addr=0x430000000 \
+       -device loader,cpu-num=1,addr=0x430000000 \
+       -device loader,cpu-num=2,addr=0x430000000 \
+       -device loader,cpu-num=3,addr=0x430000000 \
+       -smp 4 \
+       -drive file=${IMGDIR}/image-bmc,format=raw,if=mtd \
+       -nographic
 
 Aspeed minibmc family boards (``ast1030-evb``)
 ==================================================================
@@ -224,51 +257,3 @@ To boot a kernel directly from a Zephyr build tree:
 
   $ qemu-system-arm -M ast1030-evb -nographic \
         -kernel zephyr.elf
-
-Facebook Yosemite v3.5 Platform and CraterLake Server (``fby35``)
-==================================================================
-
-Facebook has a series of multi-node compute server designs named
-Yosemite. The most recent version released was
-`Yosemite v3 <https://www.opencompute.org/documents/ocp-yosemite-v3-platform-design-specification-1v16-pdf>`__.
-
-Yosemite v3.5 is an iteration on this design, and is very similar: there's a
-baseboard with a BMC, and 4 server slots. The new server board design termed
-"CraterLake" includes a Bridge IC (BIC), with room for expansion boards to
-include various compute accelerators (video, inferencing, etc). At the moment,
-only the first server slot's BIC is included.
-
-Yosemite v3.5 is itself a sled which fits into a 40U chassis, and 3 sleds
-can be fit into a chassis. See `here <https://www.opencompute.org/products/423/wiwynn-yosemite-v3-server>`__
-for an example.
-
-In this generation, the BMC is an AST2600 and each BIC is an AST1030. The BMC
-runs `OpenBMC <https://github.com/facebook/openbmc>`__, and the BIC runs
-`OpenBIC <https://github.com/facebook/openbic>`__.
-
-Firmware images can be retrieved from the Github releases or built from the
-source code, see the README's for instructions on that. This image uses the
-"fby35" machine recipe from OpenBMC, and the "yv35-cl" target from OpenBIC.
-Some reference images can also be found here:
-
-.. code-block:: bash
-
-    $ wget https://github.com/facebook/openbmc/releases/download/openbmc-e2294ff5d31d/fby35.mtd
-    $ wget https://github.com/peterdelevoryas/OpenBIC/releases/download/oby35-cl-2022.13.01/Y35BCL.elf
-
-Since this machine has multiple SoC's, each with their own serial console, the
-recommended way to run it is to allocate a pseudoterminal for each serial
-console and let the monitor use stdio. Also, starting in a paused state is
-useful because it allows you to attach to the pseudoterminals before the boot
-process starts.
-
-.. code-block:: bash
-
-    $ qemu-system-arm -machine fby35 \
-        -drive file=fby35.mtd,format=raw,if=mtd \
-        -device loader,file=Y35BCL.elf,addr=0,cpu-num=2 \
-        -serial pty -serial pty -serial mon:stdio \
-        -display none -S
-    $ screen /dev/tty0 # In a separate TMUX pane, terminal window, etc.
-    $ screen /dev/tty1
-    $ (qemu) c		   # Start the boot process once screen is setup.

@@ -27,7 +27,7 @@
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "qemu/timer.h"
-#include <zlib.h>
+#include <zlib.h> /* for crc32 */
 #include "qom/object.h"
 #include "trace.h"
 
@@ -924,7 +924,7 @@ static const VMStateDescription vmstate_dp8393x = {
     .name = "dp8393x",
     .version_id = 1,
     .minimum_version_id = 1,
-    .fields = (VMStateField []) {
+    .fields = (const VMStateField []) {
         VMSTATE_UINT16_2DARRAY(cam, dp8393xState, 16, 3),
         VMSTATE_UINT16_ARRAY(regs, dp8393xState, SONIC_REG_COUNT),
         VMSTATE_END_OF_LIST()
@@ -946,7 +946,7 @@ static void dp8393x_class_init(ObjectClass *klass, void *data)
 
     set_bit(DEVICE_CATEGORY_NETWORK, dc->categories);
     dc->realize = dp8393x_realize;
-    dc->reset = dp8393x_reset;
+    device_class_set_legacy_reset(dc, dp8393x_reset);
     dc->vmsd = &vmstate_dp8393x;
     device_class_set_props(dc, dp8393x_properties);
 }

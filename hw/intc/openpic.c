@@ -41,7 +41,6 @@
 #include "hw/pci/msi.h"
 #include "qapi/error.h"
 #include "qemu/bitops.h"
-#include "qapi/qmp/qerror.h"
 #include "qemu/module.h"
 #include "qemu/timer.h"
 #include "qemu/error-report.h"
@@ -1391,7 +1390,7 @@ static const VMStateDescription vmstate_openpic_irq_queue = {
     .name = "openpic_irq_queue",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_BITMAP(queue, IRQQueue, 0, queue_size),
         VMSTATE_INT32(next, IRQQueue),
         VMSTATE_INT32(priority, IRQQueue),
@@ -1403,7 +1402,7 @@ static const VMStateDescription vmstate_openpic_irqdest = {
     .name = "openpic_irqdest",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_INT32(ctpr, IRQDest),
         VMSTATE_STRUCT(raised, IRQDest, 0, vmstate_openpic_irq_queue,
                        IRQQueue),
@@ -1418,7 +1417,7 @@ static const VMStateDescription vmstate_openpic_irqsource = {
     .name = "openpic_irqsource",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32(ivpr, IRQSource),
         VMSTATE_UINT32(idr, IRQSource),
         VMSTATE_UINT32(destmask, IRQSource),
@@ -1432,7 +1431,7 @@ static const VMStateDescription vmstate_openpic_timer = {
     .name = "openpic_timer",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32(tccr, OpenPICTimer),
         VMSTATE_UINT32(tbcr, OpenPICTimer),
         VMSTATE_END_OF_LIST()
@@ -1443,7 +1442,7 @@ static const VMStateDescription vmstate_openpic_msi = {
     .name = "openpic_msi",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32(msir, OpenPICMSI),
         VMSTATE_END_OF_LIST()
     }
@@ -1468,7 +1467,7 @@ static const VMStateDescription vmstate_openpic = {
     .version_id = 3,
     .minimum_version_id = 3,
     .post_load = openpic_post_load,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32(gcr, OpenPICState),
         VMSTATE_UINT32(vir, OpenPICState),
         VMSTATE_UINT32(pir, OpenPICState),
@@ -1535,9 +1534,7 @@ static void openpic_realize(DeviceState *dev, Error **errp)
     };
 
     if (opp->nb_cpus > MAX_CPU) {
-        error_setg(errp, QERR_PROPERTY_VALUE_OUT_OF_RANGE,
-                   TYPE_OPENPIC, "nb_cpus", (uint64_t)opp->nb_cpus,
-                   (uint64_t)0, (uint64_t)MAX_CPU);
+        error_setg(errp, "property 'nb_cpus' can be at most %d", MAX_CPU);
         return;
     }
 
@@ -1620,7 +1617,7 @@ static void openpic_class_init(ObjectClass *oc, void *data)
 
     dc->realize = openpic_realize;
     device_class_set_props(dc, openpic_properties);
-    dc->reset = openpic_reset;
+    device_class_set_legacy_reset(dc, openpic_reset);
     dc->vmsd = &vmstate_openpic;
     set_bit(DEVICE_CATEGORY_MISC, dc->categories);
 }

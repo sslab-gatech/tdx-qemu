@@ -1434,7 +1434,7 @@ static const VMStateDescription vmstate_sungem = {
     .name = "sungem",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_PCI_DEVICE(pdev, SunGEMState),
         VMSTATE_MACADDR(conf.macaddr, SunGEMState),
         VMSTATE_UINT32(phy_addr, SunGEMState),
@@ -1467,7 +1467,7 @@ static void sungem_class_init(ObjectClass *klass, void *data)
     k->revision = 0x01;
     k->class_id = PCI_CLASS_NETWORK_ETHERNET;
     dc->vmsd = &vmstate_sungem;
-    dc->reset = sungem_reset;
+    device_class_set_legacy_reset(dc, sungem_reset);
     device_class_set_props(dc, sungem_properties);
     set_bit(DEVICE_CATEGORY_NETWORK, dc->categories);
 }

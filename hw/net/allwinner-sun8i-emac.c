@@ -851,7 +851,7 @@ static const VMStateDescription vmstate_aw_emac = {
     .version_id = 1,
     .minimum_version_id = 1,
     .post_load = allwinner_sun8i_emac_post_load,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT8(mii_phy_addr, AwSun8iEmacState),
         VMSTATE_UINT32(mii_cmd, AwSun8iEmacState),
         VMSTATE_UINT32(mii_data, AwSun8iEmacState),
@@ -881,7 +881,7 @@ static void allwinner_sun8i_emac_class_init(ObjectClass *klass, void *data)
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->realize = allwinner_sun8i_emac_realize;
-    dc->reset = allwinner_sun8i_emac_reset;
+    device_class_set_legacy_reset(dc, allwinner_sun8i_emac_reset);
     dc->vmsd = &vmstate_aw_emac;
     device_class_set_props(dc, allwinner_sun8i_emac_properties);
 }

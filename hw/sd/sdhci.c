@@ -473,6 +473,7 @@ static uint32_t sdhci_read_dataport(SDHCIState *s, unsigned size)
     }
 
     for (i = 0; i < size; i++) {
+        assert(s->data_count < s->buf_maxsz);
         value |= s->fifo_buffer[s->data_count] << i * 8;
         s->data_count++;
         /* check if we've read all valid data (blksize bytes) from buffer */
@@ -561,6 +562,7 @@ static void sdhci_write_dataport(SDHCIState *s, uint32_t value, unsigned size)
     }
 
     for (i = 0; i < size; i++) {
+        assert(s->data_count < s->buf_maxsz);
         s->fifo_buffer[s->data_count] = value & 0xFF;
         s->data_count++;
         value >>= 8;
@@ -745,7 +747,7 @@ static void sdhci_do_adma(SDHCIState *s)
     const uint16_t block_size = s->blksize & BLOCK_SIZE_MASK;
     const MemTxAttrs attrs = { .memory = true };
     ADMADescr dscr = {};
-    MemTxResult res;
+    MemTxResult res = MEMTX_ERROR;
     int i;
 
     if (s->trnmod & SDHC_TRNS_BLK_CNT_EN && !s->blkcnt) {
@@ -844,6 +846,7 @@ static void sdhci_do_adma(SDHCIState *s)
                 }
             }
             if (res != MEMTX_OK) {
+                s->data_count = 0;
                 if (s->errintstsen & SDHC_EISEN_ADMAERR) {
                     trace_sdhci_error("Set ADMA error flag");
                     s->errintsts |= SDHC_EIS_ADMAERR;
@@ -981,8 +984,9 @@ static inline bool
 sdhci_buff_access_is_sequential(SDHCIState *s, unsigned byte_num)
 {
     if ((s->data_count & 0x3) != byte_num) {
-        trace_sdhci_error("Non-sequential access to Buffer Data Port register"
-                          "is prohibited\n");
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "SDHCI: Non-sequential access to Buffer Data Port"
+                      " register is prohibited\n");
         return false;
     }
     return true;
@@ -1208,6 +1212,12 @@ sdhci_write(void *opaque, hwaddr offset, uint64_t val, unsigned size)
         if (!(s->capareg & R_SDHC_CAPAB_SDMA_MASK)) {
             value &= ~SDHC_TRNS_DMA;
         }
+
+        /* TRNMOD writes are inhibited while Command Inhibit (DAT) is true */
+        if (s->prnsts & SDHC_DATA_INHIBIT) {
+            mask |= 0xffff;
+        }
+
         MASKED_WRITE(s->trnmod, mask, value & SDHC_TRNMOD_MASK);
         MASKED_WRITE(s->cmdreg, mask >> 16, value >> 16);
 
@@ -1457,7 +1467,7 @@ static const VMStateDescription sdhci_pending_insert_vmstate = {
     .version_id = 1,
     .minimum_version_id = 1,
     .needed = sdhci_pending_insert_vmstate_needed,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_BOOL(pending_insert_state, SDHCIState),
         VMSTATE_END_OF_LIST()
     },
@@ -1467,7 +1477,7 @@ const VMStateDescription sdhci_vmstate = {
     .name = "sdhci",
     .version_id = 1,
     .minimum_version_id = 1,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32(sdmasysad, SDHCIState),
         VMSTATE_UINT16(blksize, SDHCIState),
         VMSTATE_UINT16(blkcnt, SDHCIState),
@@ -1498,7 +1508,7 @@ const VMStateDescription sdhci_vmstate = {
         VMSTATE_TIMER_PTR(transfer_timer, SDHCIState),
         VMSTATE_END_OF_LIST()
     },
-    .subsections = (const VMStateDescription*[]) {
+    .subsections = (const VMStateDescription * const []) {
         &sdhci_pending_insert_vmstate,
         NULL
     },
@@ -1510,7 +1520,7 @@ void sdhci_common_class_init(ObjectClass *klass, void *data)
 
     set_bit(DEVICE_CATEGORY_STORAGE, dc->categories);
     dc->vmsd = &sdhci_vmstate;
-    dc->reset = sdhci_poweron_reset;
+    device_class_set_legacy_reset(dc, sdhci_poweron_reset);
 }
 
 /* --- qdev SysBus --- */

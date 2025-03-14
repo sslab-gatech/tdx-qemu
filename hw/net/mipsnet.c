@@ -218,7 +218,7 @@ static const VMStateDescription vmstate_mipsnet = {
     .name = "mipsnet",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT32(busy, MIPSnetState),
         VMSTATE_UINT32(rx_count, MIPSnetState),
         VMSTATE_UINT32(rx_read, MIPSnetState),
@@ -278,7 +278,7 @@ static void mipsnet_class_init(ObjectClass *klass, void *data)
     dc->realize = mipsnet_realize;
     set_bit(DEVICE_CATEGORY_NETWORK, dc->categories);
     dc->desc = "MIPS Simulator network device";
-    dc->reset = mipsnet_sysbus_reset;
+    device_class_set_legacy_reset(dc, mipsnet_sysbus_reset);
     dc->vmsd = &vmstate_mipsnet;
     device_class_set_props(dc, mipsnet_properties);
 }

@@ -48,7 +48,7 @@ struct TULIPState {
 
 static const VMStateDescription vmstate_pci_tulip = {
     .name = "tulip",
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_PCI_DEVICE(dev, TULIPState),
         VMSTATE_UINT32_ARRAY(csr, TULIPState, 16),
         VMSTATE_UINT32(old_csr9, TULIPState),
@@ -1026,7 +1026,7 @@ static void tulip_class_init(ObjectClass *klass, void *data)
     k->class_id = PCI_CLASS_NETWORK_ETHERNET;
     dc->vmsd = &vmstate_pci_tulip;
     device_class_set_props(dc, tulip_properties);
-    dc->reset = tulip_qdev_reset;
+    device_class_set_legacy_reset(dc, tulip_qdev_reset);
     set_bit(DEVICE_CATEGORY_NETWORK, dc->categories);
 }
 

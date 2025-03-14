@@ -175,7 +175,7 @@ static void glue_nmi_release(void *opaque)
     GLUE_set_irq(s, GLUE_IRQ_IN_NMI, 0);
 }
 
-static void glue_reset_hold(Object *obj)
+static void glue_reset_hold(Object *obj, ResetType type)
 {
     GLUEState *s = GLUE(obj);
 
@@ -189,7 +189,7 @@ static const VMStateDescription vmstate_glue = {
     .name = "q800-glue",
     .version_id = 0,
     .minimum_version_id = 0,
-    .fields = (VMStateField[]) {
+    .fields = (const VMStateField[]) {
         VMSTATE_UINT8(ipr, GLUEState),
         VMSTATE_UINT8(auxmode, GLUEState),
         VMSTATE_TIMER_PTR(nmi_release, GLUEState),

@@ -34,6 +34,10 @@ config PCA9552
     bool
     depends on I2C
 
+config PCA9554
+    bool
+    depends on I2C
+
 config I2C_ECHO
     bool
     default y if TEST_DEVICES
@@ -70,13 +74,15 @@ config IVSHMEM_DEVICE
 
 config ECCMEMCTL
     bool
-    select ECC
 
 config IMX
     bool
     select PTIMER
     select SSI
     select USB_EHCI_SYSBUS
+
+config STM32_RCC
+    bool
 
 config STM32F2XX_SYSCFG
     bool
@@ -85,6 +91,15 @@ config STM32F4XX_SYSCFG
     bool
 
 config STM32F4XX_EXTI
+    bool
+
+config STM32L4X5_EXTI
+    bool
+
+config STM32L4X5_SYSCFG
+    bool
+
+config STM32L4X5_RCC
     bool
 
 config MIPS_ITU
