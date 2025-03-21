@@ -4782,16 +4782,18 @@ int kvm_arch_put_registers(CPUState *cpu, int level)
         return ret;
     }
 
-    /* Synchronize OpenTDX related states */
-    ret = kvm_put_seam_state(x86_cpu);
-    if (ret < 0) {
-        return ret;
-    }
-
-    if (x86_cpu->apic_id == 0) {
-        ret = kvm_put_mktme_state(x86_cpu);
+    if (runstate_check(RUN_STATE_INMIGRATE)) {
+        /* Synchronize OpenTDX related states */
+        ret = kvm_put_seam_state(x86_cpu);
         if (ret < 0) {
             return ret;
+        }
+
+        if (x86_cpu->apic_id == 0) {
+            ret = kvm_put_mktme_state(x86_cpu);
+            if (ret < 0) {
+                return ret;
+            }
         }
     }
 
@@ -4858,16 +4860,18 @@ int kvm_arch_get_registers(CPUState *cs)
     }
 #endif
 
-    /* Retrieve OpenTDX related states */
-    ret = kvm_get_seam_state(cpu);
-    if (ret < 0) {
-        goto out;
-    }
-
-    if (cpu->apic_id == 0) {
-        ret = kvm_get_mktme_state(cpu);
+    if (runstate_check(RUN_STATE_FINISH_MIGRATE)) {
+        /* Retrieve OpenTDX related states */
+        ret = kvm_get_seam_state(cpu);
         if (ret < 0) {
             goto out;
+        }
+
+        if (cpu->apic_id == 0) {
+            ret = kvm_get_mktme_state(cpu);
+            if (ret < 0) {
+                goto out;
+            }
         }
     }
 
