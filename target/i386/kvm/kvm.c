@@ -3085,7 +3085,7 @@ static uint64_t make_vmx_msr_value(uint32_t index, uint32_t features)
         default1 = 0x00036dff;
         break;
     case MSR_IA32_VMX_PROCBASED_CTLS2:
-        default1 = 0;
+        default1 = 0x40000;
         break;
     default:
         abort();
